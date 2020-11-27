@@ -55,27 +55,25 @@ namespace ProducesResponseTypeAnalyzer
 
                     if (returnType != typeof(Task)) continue;
 
-                    if (returnType == typeof(Task)) {
-                        var parameterType = returnType.GetGenericParameterConstraints().FirstOrDefault();
+                    var parameterType = returnType.GetGenericParameterConstraints().FirstOrDefault();
 
-                        if (parameterType == null) continue;
+                    if (parameterType == null) continue;
 
-                        if (parameterType != typeof(ActionResult)) continue;
+                    if (parameterType != typeof(ActionResult)) continue;
 
-                        var genericType = parameterType.GenericTypeArguments.FirstOrDefault();
+                    var expectedType = parameterType.GenericTypeArguments.FirstOrDefault();
 
-                        if (genericType == null) continue;
+                    if (expectedType == null) continue;
 
-                        if (genericType != typeof(OkObjectResult)) continue;
+                    if (expectedType != typeof(OkObjectResult)) continue;
 
-                        if (!genericType.ContainsGenericParameters) continue;
+                    if (!expectedType.ContainsGenericParameters) continue;
 
-                        if (returnType != genericType) continue;
+                    if (returnType != expectedType) continue;
 
-                        // Sample Message
-                        var diagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
-                        syntaxTreeContext.ReportDiagnostic(diagnostic);
-                    }
+                    // Sample Message
+                    var expectedDiagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
+                    syntaxTreeContext.ReportDiagnostic(expectedDiagnostic);
                 }
             });
         }
