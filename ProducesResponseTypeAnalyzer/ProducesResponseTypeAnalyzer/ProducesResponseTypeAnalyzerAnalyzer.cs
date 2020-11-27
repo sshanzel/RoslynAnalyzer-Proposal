@@ -35,11 +35,7 @@ namespace ProducesResponseTypeAnalyzer
                 // Iterate through all statements in the tree
                 var root = syntaxTreeContext.Tree.GetRoot(syntaxTreeContext.CancellationToken);
                 foreach (var statement in root.DescendantNodes().OfType<ReturnStatementSyntax>()) {
-                    var methodDeclaration = statement.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
-
-                    if (methodDeclaration == null) continue;
-
-                    var returnType = methodDeclaration.ReturnType.GetType();
+                    var returnType = statement.ReturnKeyword.Value.GetType();
 
                     if (returnType == typeof(ActionResult)) {
                         if (!returnType.ContainsGenericParameters) continue;
@@ -50,8 +46,9 @@ namespace ProducesResponseTypeAnalyzer
 
                         if (genericType != typeof(OkObjectResult)) continue;
 
-                        if (!IsValidReturnedType(methodDeclaration, genericType, statement)) continue;
+                        if (returnType != genericType) continue;
 
+                        // Sample Message
                         var diagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
                         syntaxTreeContext.ReportDiagnostic(diagnostic);
                     }
@@ -71,24 +68,16 @@ namespace ProducesResponseTypeAnalyzer
 
                         if (genericType != typeof(OkObjectResult)) continue;
 
-                        if (!parameterType.ContainsGenericParameters) continue;
+                        if (!genericType.ContainsGenericParameters) continue;
 
-                        if (!IsValidReturnedType(methodDeclaration, genericType, statement)) return;
+                        if (returnType != genericType) continue;
 
+                        // Sample Message
                         var diagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
                         syntaxTreeContext.ReportDiagnostic(diagnostic);
                     }
                 }
             });
-        }
-
-        private bool IsValidReturnedType(MethodDeclarationSyntax methodDeclaration, Type expectedType, ReturnStatementSyntax statement)
-        {
-            if (methodDeclaration == null || expectedType == null) return false;
-
-            var returnType = statement.Expression.GetFirstDirective();
-
-            return returnType.GetType() == expectedType;
         }
 
         private static void AnalyzeSymbol(SymbolAnalysisContext context)
