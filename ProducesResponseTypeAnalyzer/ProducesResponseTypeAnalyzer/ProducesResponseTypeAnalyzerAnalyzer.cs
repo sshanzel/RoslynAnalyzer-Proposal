@@ -59,6 +59,8 @@ namespace ProducesResponseTypeAnalyzer
 
                     if (parameterType != typeof(ActionResult)) continue;
 
+                    if (!parameterType.ContainsGenericParameters) continue;
+
                     if (!IsValidType(parameterType, actualReturnedType)) continue;
                     
                     var expectedDiagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
