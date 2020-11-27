@@ -42,12 +42,8 @@ namespace ProducesResponseTypeAnalyzer
 
                     var methodReturnType = methodDeclaration.ReturnType.GetType();
 
-                    if (methodReturnType == typeof(ActionResult)) {
-                        if (IsValidType(methodReturnType, actualReturnedType)) continue;
-
-                        var diagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
-                        syntaxTreeContext.ReportDiagnostic(diagnostic);
-                    }
+                    if (methodReturnType == typeof(ActionResult) && IsValidType(methodReturnType, actualReturnedType))
+                        syntaxTreeContext.ReportDiagnostic(Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation()));
 
                     if (methodReturnType != typeof(Task)) continue;
 
@@ -59,8 +55,7 @@ namespace ProducesResponseTypeAnalyzer
 
                     if (IsValidType(parameterType, actualReturnedType)) continue;
                     
-                    var expectedDiagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
-                    syntaxTreeContext.ReportDiagnostic(expectedDiagnostic);
+                    syntaxTreeContext.ReportDiagnostic(Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation()));
                 }
             });
         }
