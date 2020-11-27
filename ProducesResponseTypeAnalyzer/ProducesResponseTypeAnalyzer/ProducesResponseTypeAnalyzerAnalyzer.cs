@@ -43,9 +43,7 @@ namespace ProducesResponseTypeAnalyzer
                     var methodReturnType = methodDeclaration.ReturnType.GetType();
 
                     if (methodReturnType == typeof(ActionResult)) {
-                        if (!methodReturnType.ContainsGenericParameters) continue;
-
-                        if (!IsValidType(methodReturnType, actualReturnedType)) continue;
+                        if (IsValidType(methodReturnType, actualReturnedType)) continue;
 
                         var diagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
                         syntaxTreeContext.ReportDiagnostic(diagnostic);
@@ -59,9 +57,7 @@ namespace ProducesResponseTypeAnalyzer
 
                     if (parameterType != typeof(ActionResult)) continue;
 
-                    if (!parameterType.ContainsGenericParameters) continue;
-
-                    if (!IsValidType(parameterType, actualReturnedType)) continue;
+                    if (IsValidType(parameterType, actualReturnedType)) continue;
                     
                     var expectedDiagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
                     syntaxTreeContext.ReportDiagnostic(expectedDiagnostic);
@@ -71,13 +67,11 @@ namespace ProducesResponseTypeAnalyzer
 
         private bool IsValidType(Type actionResultType, Type actualReturnedType)
         {
+            if (!actionResultType.ContainsGenericParameters) return false;
+
             var okObjectResultType = actionResultType.GenericTypeArguments.FirstOrDefault();
 
-            if (okObjectResultType == null) return false;
-
             if (okObjectResultType != typeof(OkObjectResult)) return false;
-
-            if (!okObjectResultType.ContainsGenericParameters) return false;
 
             var expectedType = okObjectResultType.GenericTypeArguments.FirstOrDefault();
 
