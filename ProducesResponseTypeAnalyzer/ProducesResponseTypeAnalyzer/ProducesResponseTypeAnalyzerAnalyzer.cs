@@ -35,47 +35,53 @@ namespace ProducesResponseTypeAnalyzer
                 // Iterate through all statements in the tree
                 var root = syntaxTreeContext.Tree.GetRoot(syntaxTreeContext.CancellationToken);
                 foreach (var statement in root.DescendantNodes().OfType<ReturnStatementSyntax>()) {
-                    var returnType = statement.ReturnKeyword.Value.GetType();
+                    var methodDeclaration = statement.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+                    var actualReturnedType = statement.ReturnKeyword.Value.GetType();
 
-                    if (returnType == typeof(ActionResult)) {
-                        if (!returnType.ContainsGenericParameters) continue;
+                    if (methodDeclaration == null) continue;
 
-                        var genericType = returnType.GenericTypeArguments.FirstOrDefault();
+                    var methodReturnType = methodDeclaration.ReturnType.GetType();
 
-                        if (genericType == null) continue;
+                    if (methodReturnType == typeof(ActionResult)) {
+                        if (!methodReturnType.ContainsGenericParameters) continue;
 
-                        if (genericType != typeof(OkObjectResult)) continue;
+                        if (!IsValidType(methodReturnType, actualReturnedType)) continue;
 
-                        if (returnType != genericType) continue;
-
-                        // Sample Message
                         var diagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
                         syntaxTreeContext.ReportDiagnostic(diagnostic);
                     }
 
-                    if (returnType != typeof(Task)) continue;
+                    if (methodReturnType != typeof(Task)) continue;
 
-                    var parameterType = returnType.GetGenericParameterConstraints().FirstOrDefault();
+                    var parameterType = methodReturnType.GetGenericParameterConstraints().FirstOrDefault();
 
                     if (parameterType == null) continue;
 
                     if (parameterType != typeof(ActionResult)) continue;
 
-                    var expectedType = parameterType.GenericTypeArguments.FirstOrDefault();
-
-                    if (expectedType == null) continue;
-
-                    if (expectedType != typeof(OkObjectResult)) continue;
-
-                    if (!expectedType.ContainsGenericParameters) continue;
-
-                    if (returnType != expectedType) continue;
-
-                    // Sample Message
+                    if (!IsValidType(parameterType, actualReturnedType)) continue;
+                    
                     var expectedDiagnostic = Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation());
                     syntaxTreeContext.ReportDiagnostic(expectedDiagnostic);
                 }
             });
+        }
+
+        private bool IsValidType(Type actionResultType, Type actualReturnedType)
+        {
+            var okObjectResultType = actionResultType.GenericTypeArguments.FirstOrDefault();
+
+            if (okObjectResultType == null) return false;
+
+            if (okObjectResultType != typeof(OkObjectResult)) return false;
+
+            if (!okObjectResultType.ContainsGenericParameters) return false;
+
+            var expectedType = okObjectResultType.GenericTypeArguments.FirstOrDefault();
+
+            if (expectedType == null) return false;
+
+            return expectedType == actualReturnedType;
         }
 
         private static void AnalyzeSymbol(SymbolAnalysisContext context)
